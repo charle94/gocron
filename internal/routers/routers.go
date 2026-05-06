@@ -12,10 +12,13 @@ import (
 	"github.com/go-macaron/gzip"
 	"github.com/go-macaron/toolbox"
 	"github.com/ouqiang/gocron/internal/modules/app"
+	casbinauth "github.com/ouqiang/gocron/internal/modules/casbin"
 	"github.com/ouqiang/gocron/internal/modules/logger"
 	"github.com/ouqiang/gocron/internal/modules/utils"
+	"github.com/ouqiang/gocron/internal/routers/admin"
 	"github.com/ouqiang/gocron/internal/routers/host"
 	"github.com/ouqiang/gocron/internal/routers/install"
+	llmrouter "github.com/ouqiang/gocron/internal/routers/llm"
 	"github.com/ouqiang/gocron/internal/routers/loginlog"
 	"github.com/ouqiang/gocron/internal/routers/manage"
 	"github.com/ouqiang/gocron/internal/routers/task"
@@ -123,6 +126,22 @@ func Register(m *macaron.Macaron) {
 			m.Post("/update", manage.UpdateWebHook)
 		})
 		m.Get("/login-log", loginlog.Index)
+	})
+
+	// LLM 对话接口
+	m.Group("/llm", func() {
+		m.Get("/settings", llmrouter.GetSettings)
+		m.Post("/settings", llmrouter.UpdateSettings)
+		m.Post("/chat", llmrouter.Chat)
+	})
+
+	// 后台管理（仅管理员可见）：casbin 权限策略管理
+	m.Group("/admin", func() {
+		m.Get("/policy", admin.ListPolicies)
+		m.Post("/policy/add", admin.AddPolicy)
+		m.Post("/policy/remove", admin.RemovePolicy)
+		m.Post("/role/add", admin.AddRoleForUser)
+		m.Post("/role/remove", admin.RemoveRoleForUser)
 	})
 
 	// API
@@ -235,28 +254,42 @@ func userAuth(ctx *macaron.Context) {
 
 }
 
-// URL权限验证
+// URL权限验证（结合 casbin 多租户 RBAC）
 func urlAuth(ctx *macaron.Context) {
 	if !app.Installed {
 		return
 	}
-	if user.IsAdmin(ctx) {
-		return
-	}
+
 	uri := strings.TrimRight(ctx.Req.URL.Path, "/")
 	if strings.HasPrefix(uri, "/v1") {
 		return
 	}
-	// 普通用户允许访问的URL地址
-	allowPaths := []string{
+
+	// 公开路由无需权限
+	publicPaths := []string{
 		"",
 		"/install/status",
+		"/user/login",
+	}
+	for _, p := range publicPaths {
+		if p == uri {
+			return
+		}
+	}
+
+	// 超级管理员（is_admin=1）拥有全部权限
+	if user.IsAdmin(ctx) {
+		return
+	}
+
+	// 普通用户允许访问的固定路径
+	allowPaths := []string{
 		"/task",
 		"/task/log",
 		"/host",
 		"/host/all",
-		"/user/login",
 		"/user/editMyPassword",
+		"/llm/chat",
 	}
 	for _, path := range allowPaths {
 		if path == uri {
@@ -264,10 +297,56 @@ func urlAuth(ctx *macaron.Context) {
 		}
 	}
 
-	jsonResp := utils.JsonResponse{}
+	// /llm/settings GET 所有登录用户可查看
+	if uri == "/llm/settings" && ctx.Req.Method == "GET" {
+		return
+	}
 
+	// 使用 casbin 检查细粒度权限（仅在 casbin 已初始化时）
+	username := user.Username(ctx)
+	if casbinauth.Enforcer() != nil && username != "" {
+		obj, act := uriToObjAct(uri, ctx.Req.Method)
+		if obj != "" {
+			// 先检查全局域，再检查用户所属租户域
+			if casbinauth.HasPermission(username, casbinauth.GlobalDomain, obj, act) {
+				return
+			}
+			tenantId := user.TenantId(ctx)
+			if tenantId != "" && casbinauth.HasPermission(username, tenantId, obj, act) {
+				return
+			}
+		}
+	}
+
+	jsonResp := utils.JsonResponse{}
 	data := jsonResp.Failure(utils.UnauthorizedError, "您无权限访问")
 	ctx.Write([]byte(data))
+}
+
+// uriToObjAct 将 URL 路径和 HTTP 方法映射为 casbin 的资源对象和操作
+func uriToObjAct(uri, method string) (obj, act string) {
+	switch {
+	case strings.HasPrefix(uri, "/task"):
+		obj = "/task"
+	case strings.HasPrefix(uri, "/host"):
+		obj = "/host"
+	case strings.HasPrefix(uri, "/user"):
+		obj = "/user"
+	case strings.HasPrefix(uri, "/system"):
+		obj = "/system"
+	case strings.HasPrefix(uri, "/admin"):
+		obj = "/admin"
+	case strings.HasPrefix(uri, "/llm"):
+		obj = "/llm"
+	default:
+		return "", ""
+	}
+	if method == "GET" || method == "HEAD" {
+		act = "read"
+	} else {
+		act = "write"
+	}
+	return
 }
 
 /** API接口签名验证 **/

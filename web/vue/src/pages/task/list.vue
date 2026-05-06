@@ -8,7 +8,17 @@
           <el-input v-model.trim="searchParams.id"></el-input>
         </el-form-item>
         <el-form-item label="任务名称">
-          <el-input v-model.trim="searchParams.name"></el-input>
+          <el-input v-model.trim="searchParams.name" style="width:160px"></el-input>
+        </el-form-item>
+        <el-form-item label="匹配方式">
+          <el-select v-model="searchParams.name_match_type" style="width:120px">
+            <el-option
+              v-for="item in nameMatchTypeList"
+              :key="item.value"
+              :label="item.label"
+              :value="item.value">
+            </el-option>
+          </el-select>
         </el-form-item>
         <el-form-item label="标签">
           <el-input v-model.trim="searchParams.tag"></el-input>
@@ -16,7 +26,7 @@
       </el-row>
       <el-row>
         <el-form-item label="执行方式">
-          <el-select v-model.trim="searchParams.protocol">
+          <el-select v-model="searchParams.protocol">
             <el-option label="全部" value=""></el-option>
             <el-option
               v-for="item in protocolList"
@@ -27,7 +37,7 @@
           </el-select>
         </el-form-item>
         <el-form-item label="任务节点">
-          <el-select v-model.trim="searchParams.host_id">
+          <el-select v-model="searchParams.host_id">
             <el-option label="全部" value=""></el-option>
             <el-option
               v-for="item in hosts"
@@ -38,7 +48,7 @@
           </el-select>
         </el-form-item>
         <el-form-item label="状态">
-          <el-select v-model.trim="searchParams.status">
+          <el-select v-model="searchParams.status">
             <el-option label="全部" value=""></el-option>
             <el-option
               v-for="item in statusList"
@@ -201,11 +211,19 @@ export default {
         id: '',
         protocol: '',
         name: '',
+        name_match_type: 'contains',
         tag: '',
         host_id: '',
         status: ''
       },
       isAdmin: this.$store.getters.user.isAdmin,
+      nameMatchTypeList: [
+        {value: 'contains', label: '包含（默认）'},
+        {value: 'exact', label: '精确匹配'},
+        {value: 'prefix', label: '前缀匹配'},
+        {value: 'suffix', label: '后缀匹配'},
+        {value: 'regex', label: '正则匹配'}
+      ],
       protocolList: [
         {
           value: '1',

@@ -22,6 +22,9 @@ import NotificationWebhook from '../pages/system/notification/webhook'
 
 import Install from '../pages/install/index'
 import LoginLog from '../pages/system/loginLog'
+import AdminPolicy from '../pages/admin/policy'
+import LLMChat from '../pages/llm/chat'
+import LLMSettings from '../pages/llm/settings'
 
 Vue.use(Router)
 
@@ -151,6 +154,32 @@ const router = new Router({
       path: '/system/login-log',
       name: 'login-log',
       component: LoginLog
+    },
+    {
+      path: '/admin',
+      redirect: '/admin/policy'
+    },
+    {
+      path: '/admin/policy',
+      name: 'admin-policy',
+      component: AdminPolicy
+    },
+    {
+      path: '/llm',
+      redirect: '/llm/chat'
+    },
+    {
+      path: '/llm/chat',
+      name: 'llm-chat',
+      component: LLMChat,
+      meta: {
+        noNeedAdmin: true
+      }
+    },
+    {
+      path: '/llm/settings',
+      name: 'llm-settings',
+      component: LLMSettings
     }
   ]
 })

@@ -115,5 +115,14 @@ export default {
       }
     })
     handle(promise, next)
+  },
+
+  postJSON (uri, data, next) {
+    const promise = axios.post(uri, JSON.stringify(data), {
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    })
+    handle(promise, next)
   }
 }

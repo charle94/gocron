@@ -258,7 +258,34 @@ func (task *Task) parseWhere(session *xorm.Session, params CommonMap) {
 	}
 	name, ok := params["Name"]
 	if ok && name.(string) != "" {
-		session.And("t.name LIKE ?", "%"+name.(string)+"%")
+		nameVal := name.(string)
+		matchType, _ := params["NameMatchType"]
+		switch matchType {
+		case "exact":
+			// 精确匹配
+			session.And("t.name = ?", nameVal)
+		case "prefix":
+			// 前缀匹配
+			session.And("t.name LIKE ?", nameVal+"%")
+		case "suffix":
+			// 后缀匹配
+			session.And("t.name LIKE ?", "%"+nameVal)
+		case "regex":
+			// 正则匹配：根据数据库引擎使用不同语法
+			// MySQL/SQLite: REGEXP；PostgreSQL: ~
+			// 注意：SQLite 需要在连接上注册 REGEXP 函数，
+			// 此处依赖 glebarez/go-sqlite 的内置 REGEXP 支持
+			switch DbEngine {
+			case "postgres":
+				session.And("t.name ~ ?", nameVal)
+			default:
+				// mysql / sqlite3
+				session.And("t.name REGEXP ?", nameVal)
+			}
+		default:
+			// 默认：模糊包含匹配（contains）
+			session.And("t.name LIKE ?", "%"+nameVal+"%")
+		}
 	}
 	protocol, ok := params["Protocol"]
 	if ok && protocol.(int) > 0 {

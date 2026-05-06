@@ -1,14 +1,14 @@
 package app
 
 import (
-	"os"
-	"path/filepath"
-
 	"fmt"
 	"io/ioutil"
+	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 
+	casbinauth "github.com/ouqiang/gocron/internal/modules/casbin"
 	"github.com/ouqiang/gocron/internal/modules/logger"
 	"github.com/ouqiang/gocron/internal/modules/setting"
 	"github.com/ouqiang/gocron/internal/modules/utils"
@@ -49,6 +49,8 @@ func InitEnv(versionString string) {
 	createDirIfNotExists(ConfDir, LogDir)
 	Installed = IsInstalled()
 	VersionId = ToNumberVersion(versionString)
+	// 初始化 casbin 权限管理（依赖 ConfDir）
+	casbinauth.Init(ConfDir)
 }
 
 // IsInstalled 判断应用是否已安装
