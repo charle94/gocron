@@ -1,6 +1,7 @@
 package casbinauth
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"sync"
@@ -79,51 +80,78 @@ func HasPermission(subject, domain, obj, act string) bool {
 
 // AddRoleForUser 为用户分配角色（在指定域内）
 func AddRoleForUser(user, role, domain string) error {
+	if enforcer == nil {
+		return fmt.Errorf("casbin 未初始化")
+	}
 	_, err := enforcer.AddRoleForUserInDomain(user, role, domain)
 	return err
 }
 
 // RemoveRoleForUser 删除用户在指定域内的角色
 func RemoveRoleForUser(user, role, domain string) error {
+	if enforcer == nil {
+		return fmt.Errorf("casbin 未初始化")
+	}
 	_, err := enforcer.DeleteRoleForUserInDomain(user, role, domain)
 	return err
 }
 
 // GetRolesForUser 获取用户在指定域内的所有角色
 func GetRolesForUser(user, domain string) []string {
+	if enforcer == nil {
+		return nil
+	}
 	return enforcer.GetRolesForUserInDomain(user, domain)
 }
 
 // GetUsersForRole 获取指定域内某角色的所有用户
 func GetUsersForRole(role, domain string) []string {
+	if enforcer == nil {
+		return nil
+	}
 	return enforcer.GetUsersForRoleInDomain(role, domain)
 }
 
 // GetAllPolicies 获取所有策略规则
 func GetAllPolicies() [][]string {
+	if enforcer == nil {
+		return [][]string{}
+	}
 	policies, _ := enforcer.GetPolicy()
 	return policies
 }
 
 // GetAllGroupingPolicies 获取所有角色分配规则
 func GetAllGroupingPolicies() [][]string {
+	if enforcer == nil {
+		return [][]string{}
+	}
 	groupings, _ := enforcer.GetGroupingPolicy()
 	return groupings
 }
 
 // AddPolicy 添加一条策略规则
 func AddPolicy(sub, dom, obj, act string) error {
+	if enforcer == nil {
+		return fmt.Errorf("casbin 未初始化")
+	}
 	_, err := enforcer.AddPolicy(sub, dom, obj, act)
 	return err
 }
 
 // RemovePolicy 删除一条策略规则
 func RemovePolicy(sub, dom, obj, act string) error {
+	if enforcer == nil {
+		return fmt.Errorf("casbin 未初始化")
+	}
 	_, err := enforcer.RemovePolicy(sub, dom, obj, act)
 	return err
 }
 
 // SavePolicy 持久化当前策略到文件
 func SavePolicy() error {
+	if enforcer == nil {
+		return fmt.Errorf("casbin 未初始化")
+	}
 	return enforcer.SavePolicy()
 }
