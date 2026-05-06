@@ -83,11 +83,11 @@ export default {
   name: 'LLMChat',
   data () {
     return {
-      messages: [],          // {role, content} shown in UI
-      apiMessages: [],       // messages sent to backend (full history)
+      messages: [], // {role, content} shown in UI
+      apiMessages: [], // messages sent to backend (full history)
       inputText: '',
       loading: false,
-      pendingAction: null,   // {tool, args, description}
+      pendingAction: null, // {tool, args, description}
       pendingConfirmedTools: []
     }
   },
