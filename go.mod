@@ -5,7 +5,7 @@ go 1.12
 require (
 	github.com/Tang-RoseChild/mahonia v0.0.0-20131226213531-0eef680515cc
 	github.com/Unknwon/com v0.0.0-20190321035513-0fed4efef755 // indirect
-	github.com/casbin/casbin/v2 v2.135.0 // indirect
+	github.com/casbin/casbin/v2 v2.135.0
 	github.com/cihub/seelog v0.0.0-20170130134532-f561c5e57575
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/glebarez/go-sqlite v1.22.0
@@ -19,7 +19,6 @@ require (
 	github.com/go-xorm/core v0.6.2
 	github.com/go-xorm/xorm v0.7.1
 	github.com/golang/protobuf v1.3.1
-	github.com/google/uuid v1.6.0 // indirect
 	github.com/jakecoffman/cron v0.0.0-20190106200828-7e2009c226a5
 	github.com/klauspost/compress v1.5.0 // indirect
 	github.com/klauspost/cpuid v1.2.1 // indirect

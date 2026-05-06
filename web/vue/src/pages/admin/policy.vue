@@ -98,6 +98,10 @@ export default {
   methods: {
     loadData () {
       adminService.listPolicies((data) => {
+        if (!data) {
+          this.$message.error('加载权限策略失败')
+          return
+        }
         this.policies = data.policies || []
         this.groupings = data.groupings || []
       })

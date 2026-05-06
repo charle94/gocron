@@ -280,6 +280,18 @@ func Uid(ctx *macaron.Context) int {
 	}
 }
 
+// TenantId 获取当前用户的租户ID
+func TenantId(ctx *macaron.Context) string {
+	tenantId, ok := ctx.Data["tenant_id"]
+	if !ok {
+		return ""
+	}
+	if v, ok := tenantId.(string); ok {
+		return v
+	}
+	return ""
+}
+
 // IsLogin 判断用户是否已登录
 func IsLogin(ctx *macaron.Context) bool {
 	return Uid(ctx) > 0
@@ -308,6 +320,7 @@ func generateToken(user *models.User) (string, error) {
 	claims["issuer"] = "gocron"
 	claims["username"] = user.Name
 	claims["is_admin"] = user.IsAdmin
+	claims["tenant_id"] = user.TenantId
 	token.Claims = claims
 
 	return token.SignedString([]byte(app.Setting.AuthSecret))
@@ -333,6 +346,9 @@ func RestoreToken(ctx *macaron.Context) error {
 	ctx.Data["uid"] = int(claims["uid"].(float64))
 	ctx.Data["username"] = claims["username"]
 	ctx.Data["is_admin"] = int(claims["is_admin"].(float64))
+	if tenantId, ok := claims["tenant_id"]; ok {
+		ctx.Data["tenant_id"] = tenantId.(string)
+	}
 
 	return nil
 }

@@ -63,10 +63,11 @@ func Enforcer() *casbin.Enforcer {
 }
 
 // HasPermission 检查 subject 在指定域 domain 下对 obj 是否具有 act 权限
-// isAdmin 为 true 时跳过检查，直接允许
+// 若 casbin 未初始化，返回 false（失败安全模式）
 func HasPermission(subject, domain, obj, act string) bool {
 	if enforcer == nil {
-		return true
+		logger.Warnf("casbin 未初始化，拒绝权限检查: sub=%s dom=%s obj=%s act=%s", subject, domain, obj, act)
+		return false
 	}
 	ok, err := enforcer.Enforce(subject, domain, obj, act)
 	if err != nil {

@@ -11,7 +11,7 @@
           <el-input v-model.trim="searchParams.name" style="width:160px"></el-input>
         </el-form-item>
         <el-form-item label="匹配方式">
-          <el-select v-model.trim="searchParams.name_match_type" style="width:120px">
+          <el-select v-model="searchParams.name_match_type" style="width:120px">
             <el-option
               v-for="item in nameMatchTypeList"
               :key="item.value"
@@ -26,7 +26,7 @@
       </el-row>
       <el-row>
         <el-form-item label="执行方式">
-          <el-select v-model.trim="searchParams.protocol">
+          <el-select v-model="searchParams.protocol">
             <el-option label="全部" value=""></el-option>
             <el-option
               v-for="item in protocolList"
@@ -37,7 +37,7 @@
           </el-select>
         </el-form-item>
         <el-form-item label="任务节点">
-          <el-select v-model.trim="searchParams.host_id">
+          <el-select v-model="searchParams.host_id">
             <el-option label="全部" value=""></el-option>
             <el-option
               v-for="item in hosts"
@@ -48,7 +48,7 @@
           </el-select>
         </el-form-item>
         <el-form-item label="状态">
-          <el-select v-model.trim="searchParams.status">
+          <el-select v-model="searchParams.status">
             <el-option label="全部" value=""></el-option>
             <el-option
               v-for="item in statusList"

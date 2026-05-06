@@ -23,7 +23,9 @@ func init() {
 	// 打开一个内存连接获取 driver 实例，再以 "sqlite3" 别名重新注册。
 	if !sqlDriverRegistered("sqlite3") {
 		db, err := sql.Open("sqlite", ":memory:")
-		if err == nil {
+		if err != nil {
+			logger.Warnf("无法获取 sqlite 驱动实例，跳过 sqlite3 别名注册: %s", err)
+		} else {
 			drv := db.Driver()
 			db.Close()
 			sql.Register("sqlite3", drv)
@@ -46,6 +48,9 @@ type CommonMap map[string]interface{}
 
 var TablePrefix = ""
 var Db *xorm.Engine
+
+// DbEngine 存储当前使用的数据库引擎类型（mysql/postgres/sqlite3）
+var DbEngine string
 
 const (
 	Disabled Status = 0 // 禁用
@@ -98,6 +103,7 @@ func (model *BaseModel) pageLimitOffset() int {
 // 创建Db
 func CreateDb() *xorm.Engine {
 	dsn := getDbEngineDSN(app.Setting)
+	DbEngine = strings.ToLower(app.Setting.Db.Engine)
 	engine, err := xorm.NewEngine(app.Setting.Db.Engine, dsn)
 	if err != nil {
 		logger.Fatal("创建xorm引擎失败", err)

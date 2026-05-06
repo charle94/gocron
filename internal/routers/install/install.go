@@ -35,6 +35,9 @@ type InstallForm struct {
 	AdminEmail           string `binding:"Required;Email;MaxSize(50)"`
 }
 
+// sqlitePlaceholderPort SQLite 不需要网络端口，写入占位值 1 以满足非空约束
+const sqlitePlaceholderPort = 1
+
 // isSQLite 判断是否使用 sqlite3
 func isSQLite(dbType string) bool {
 	return strings.ToLower(dbType) == "sqlite3"
@@ -128,7 +131,7 @@ func writeConfig(form InstallForm) error {
 	if isSQLite(form.DbType) {
 		host = "localhost"
 		if port <= 0 {
-			port = 1
+			port = sqlitePlaceholderPort
 		}
 	}
 	dbConfig := []string{

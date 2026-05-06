@@ -288,14 +288,17 @@ func urlAuth(ctx *macaron.Context) {
 		}
 	}
 
-	// 使用 casbin 检查细粒度权限
+	// 使用 casbin 检查细粒度权限（仅在 casbin 已初始化时）
 	username := user.Username(ctx)
-	if username != "" {
-		// 确定操作对象和动作
+	if casbinauth.Enforcer() != nil && username != "" {
 		obj, act := uriToObjAct(uri, ctx.Req.Method)
-		if casbinauth.Enforcer() != nil && obj != "" {
-			// 先尝试用户自身，再尝试用户所在域（租户级）
+		if obj != "" {
+			// 先检查全局域，再检查用户所属租户域
 			if casbinauth.HasPermission(username, casbinauth.GlobalDomain, obj, act) {
+				return
+			}
+			tenantId := user.TenantId(ctx)
+			if tenantId != "" && casbinauth.HasPermission(username, tenantId, obj, act) {
 				return
 			}
 		}
