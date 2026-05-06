@@ -11,6 +11,23 @@ import (
 
 type Migration struct{}
 
+// TablesExist 检查所有核心数据表是否存在, 返回 false 说明 DB 尚未初始化
+func (migration *Migration) TablesExist() (bool, error) {
+	tables := []interface{}{
+		new(User), new(Task), new(TaskLog), new(Host), new(Setting), new(LoginLog), new(TaskHost),
+	}
+	for _, table := range tables {
+		exist, err := Db.IsTableExist(table)
+		if err != nil {
+			return false, err
+		}
+		if !exist {
+			return false, nil
+		}
+	}
+	return true, nil
+}
+
 // 首次安装, 创建数据库表
 func (migration *Migration) Install(dbName string) error {
 	setting := new(Setting)
