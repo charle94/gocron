@@ -32,6 +32,22 @@ build-static:
 	CGO_ENABLED=0 go build -ldflags '-w -s' -o bin/gocron ./cmd/gocron
 	CGO_ENABLED=0 go build -ldflags '-w -s' -o bin/gocron-node ./cmd/node
 
+# macOS ARM64（Apple Silicon）可执行文件
+.PHONY: build-mac-arm
+build-mac-arm:
+	CGO_ENABLED=0 GOOS=darwin GOARCH=arm64 go build -ldflags '-w -s' -o bin/gocron-darwin-arm64 ./cmd/gocron
+	CGO_ENABLED=0 GOOS=darwin GOARCH=arm64 go build -ldflags '-w -s' -o bin/gocron-node-darwin-arm64 ./cmd/node
+
+# Linux AMD64 可执行文件
+.PHONY: build-linux-amd64
+build-linux-amd64:
+	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags '-w -s' -o bin/gocron-linux-amd64 ./cmd/gocron
+	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags '-w -s' -o bin/gocron-node-linux-amd64 ./cmd/node
+
+# 跨平台编译（macOS ARM64 + Linux AMD64 + 当前平台）
+.PHONY: build-cross
+build-cross: build-static build-mac-arm build-linux-amd64
+
 .PHONY: test
 test:
 	go test $(RACE) ./...

@@ -18,6 +18,7 @@ import (
 	"github.com/ouqiang/gocron/internal/routers/admin"
 	"github.com/ouqiang/gocron/internal/routers/host"
 	"github.com/ouqiang/gocron/internal/routers/install"
+	llmrouter "github.com/ouqiang/gocron/internal/routers/llm"
 	"github.com/ouqiang/gocron/internal/routers/loginlog"
 	"github.com/ouqiang/gocron/internal/routers/manage"
 	"github.com/ouqiang/gocron/internal/routers/task"
@@ -125,6 +126,13 @@ func Register(m *macaron.Macaron) {
 			m.Post("/update", manage.UpdateWebHook)
 		})
 		m.Get("/login-log", loginlog.Index)
+	})
+
+	// LLM 对话接口
+	m.Group("/llm", func() {
+		m.Get("/settings", llmrouter.GetSettings)
+		m.Post("/settings", llmrouter.UpdateSettings)
+		m.Post("/chat", llmrouter.Chat)
 	})
 
 	// 后台管理（仅管理员可见）：casbin 权限策略管理
@@ -281,11 +289,17 @@ func urlAuth(ctx *macaron.Context) {
 		"/host",
 		"/host/all",
 		"/user/editMyPassword",
+		"/llm/chat",
 	}
 	for _, path := range allowPaths {
 		if path == uri {
 			return
 		}
+	}
+
+	// /llm/settings GET 所有登录用户可查看
+	if uri == "/llm/settings" && ctx.Req.Method == "GET" {
+		return
 	}
 
 	// 使用 casbin 检查细粒度权限（仅在 casbin 已初始化时）
@@ -322,6 +336,8 @@ func uriToObjAct(uri, method string) (obj, act string) {
 		obj = "/system"
 	case strings.HasPrefix(uri, "/admin"):
 		obj = "/admin"
+	case strings.HasPrefix(uri, "/llm"):
+		obj = "/llm"
 	default:
 		return "", ""
 	}

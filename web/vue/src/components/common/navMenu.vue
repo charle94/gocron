@@ -23,6 +23,9 @@
         <el-col :span="2">
           <el-menu-item v-if="this.$store.getters.user.isAdmin" index="/admin">后台管理</el-menu-item>
         </el-col>
+        <el-col :span="2">
+          <el-menu-item index="/llm/chat">AI助手</el-menu-item>
+        </el-col>
         <el-col :span="16"></el-col>
         <el-col :span="2" style="float:right;">
           <el-submenu v-if="this.$store.getters.user.token" index="userStatus">
