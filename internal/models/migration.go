@@ -258,10 +258,17 @@ func (m *Migration) upgradeFor150(session *xorm.Session) error {
 func (m *Migration) upgradeFor160(session *xorm.Session) error {
 	logger.Info("开始升级到v1.6")
 
+	taskTable := TablePrefix + "task"
+	hostTable := TablePrefix + "host"
+	taskLogTable := TablePrefix + "task_log"
+
 	stmts := []string{
-		fmt.Sprintf("ALTER TABLE %s ADD COLUMN user_id INT NOT NULL DEFAULT 0", TablePrefix+"task"),
-		fmt.Sprintf("ALTER TABLE %s ADD COLUMN user_id INT NOT NULL DEFAULT 0", TablePrefix+"host"),
-		fmt.Sprintf("ALTER TABLE %s ADD COLUMN user_id INT NOT NULL DEFAULT 0", TablePrefix+"task_log"),
+		fmt.Sprintf("ALTER TABLE %s ADD COLUMN user_id INT NOT NULL DEFAULT 0", taskTable),
+		fmt.Sprintf("CREATE INDEX IF NOT EXISTS idx_%s_user_id ON %s (user_id)", taskTable, taskTable),
+		fmt.Sprintf("ALTER TABLE %s ADD COLUMN user_id INT NOT NULL DEFAULT 0", hostTable),
+		fmt.Sprintf("CREATE INDEX IF NOT EXISTS idx_%s_user_id ON %s (user_id)", hostTable, hostTable),
+		fmt.Sprintf("ALTER TABLE %s ADD COLUMN user_id INT NOT NULL DEFAULT 0", taskLogTable),
+		fmt.Sprintf("CREATE INDEX IF NOT EXISTS idx_%s_user_id ON %s (user_id)", taskLogTable, taskLogTable),
 	}
 	for _, sql := range stmts {
 		if _, err := session.Exec(sql); err != nil {

@@ -38,7 +38,7 @@ func Index(ctx *macaron.Context) string {
 func Clear(ctx *macaron.Context) string {
 	json := utils.JsonResponse{}
 	if !userAuth.IsAdmin(ctx) {
-		return json.CommonFailure("无权限操作")
+		return json.CommonFailure("仅管理员可以清空日志")
 	}
 	taskLogModel := new(models.TaskLog)
 	_, err := taskLogModel.Clear()
