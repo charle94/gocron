@@ -12,6 +12,7 @@ type TaskType int8
 type TaskLog struct {
 	Id         int64        `json:"id" xorm:"bigint pk autoincr"`
 	TaskId     int          `json:"task_id" xorm:"int notnull index default 0"`       // 任务id
+	UserId     int          `json:"user_id" xorm:"int notnull index default 0"`       // 所属用户ID
 	Name       string       `json:"name" xorm:"varchar(32) notnull"`                  // 任务名称
 	Spec       string       `json:"spec" xorm:"varchar(64) notnull"`                  // crontab
 	Protocol   TaskProtocol `json:"protocol" xorm:"tinyint notnull index"`            // 协议 1:http 2:RPC
@@ -87,6 +88,10 @@ func (taskLog *TaskLog) parseWhere(session *xorm.Session, params CommonMap) {
 	taskId, ok := params["TaskId"]
 	if ok && taskId.(int) > 0 {
 		session.And("task_id = ?", taskId)
+	}
+	userId, ok := params["UserId"]
+	if ok && userId.(int) > 0 {
+		session.And("user_id = ?", userId)
 	}
 	protocol, ok := params["Protocol"]
 	if ok && protocol.(int) > 0 {

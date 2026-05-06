@@ -12,6 +12,7 @@ import (
 	"github.com/ouqiang/gocron/internal/modules/logger"
 	"github.com/ouqiang/gocron/internal/modules/utils"
 	"github.com/ouqiang/gocron/internal/routers/base"
+	userAuth "github.com/ouqiang/gocron/internal/routers/user"
 	"github.com/ouqiang/gocron/internal/service"
 	"gopkg.in/macaron.v1"
 )
@@ -53,6 +54,9 @@ func (f TaskForm) Error(ctx *macaron.Context, errs binding.Errors) {
 func Index(ctx *macaron.Context) string {
 	taskModel := new(models.Task)
 	queryParams := parseQueryParams(ctx)
+	if !userAuth.IsAdmin(ctx) {
+		queryParams["UserId"] = userAuth.Uid(ctx)
+	}
 	total, err := taskModel.Total(queryParams)
 	if err != nil {
 		logger.Error(err)
@@ -82,6 +86,9 @@ func Detail(ctx *macaron.Context) string {
 		logger.Errorf("编辑任务#获取任务详情失败#任务ID-%d", id)
 		return jsonResp.Success(utils.SuccessContent, nil)
 	}
+	if !userAuth.IsAdmin(ctx) && task.UserId != userAuth.Uid(ctx) {
+		return jsonResp.CommonFailure("无权限访问")
+	}
 
 	return jsonResp.Success(utils.SuccessContent, task)
 }
@@ -101,6 +108,18 @@ func Store(ctx *macaron.Context, form TaskForm) string {
 
 	if form.Protocol == models.TaskRPC && form.HostId == "" {
 		return json.CommonFailure("请选择主机名")
+	}
+
+	// 更新时检查任务归属
+	if id > 0 && !userAuth.IsAdmin(ctx) {
+		existing := new(models.Task)
+		existingTask, err2 := existing.Detail(id)
+		if err2 != nil || existingTask.Id == 0 {
+			return json.CommonFailure("任务不存在")
+		}
+		if existingTask.UserId != userAuth.Uid(ctx) {
+			return json.CommonFailure("无权限操作")
+		}
 	}
 
 	taskModel.Name = form.Name
@@ -170,6 +189,8 @@ func Store(ctx *macaron.Context, form TaskForm) string {
 	}
 
 	if id == 0 {
+		// 新建任务关联当前用户
+		taskModel.UserId = userAuth.Uid(ctx)
 		// 任务添加后开始调度执行
 		taskModel.Status = models.Running
 		id, err = taskModel.Create()
@@ -205,6 +226,11 @@ func Store(ctx *macaron.Context, form TaskForm) string {
 func Remove(ctx *macaron.Context) string {
 	id := ctx.ParamsInt(":id")
 	json := utils.JsonResponse{}
+	if !userAuth.IsAdmin(ctx) {
+		if msg := checkTaskOwner(id, userAuth.Uid(ctx)); msg != "" {
+			return json.CommonFailure(msg)
+		}
+	}
 	taskModel := new(models.Task)
 	_, err := taskModel.Delete(id)
 	if err != nil {
@@ -238,6 +264,9 @@ func Run(ctx *macaron.Context) string {
 	if err != nil || task.Id <= 0 {
 		return json.CommonFailure("获取任务详情失败", err)
 	}
+	if !userAuth.IsAdmin(ctx) && task.UserId != userAuth.Uid(ctx) {
+		return json.CommonFailure("无权限操作")
+	}
 
 	task.Spec = "手动运行"
 	service.ServiceTask.Run(task)
@@ -249,6 +278,11 @@ func Run(ctx *macaron.Context) string {
 func changeStatus(ctx *macaron.Context, status models.Status) string {
 	id := ctx.ParamsInt(":id")
 	json := utils.JsonResponse{}
+	if !userAuth.IsAdmin(ctx) {
+		if msg := checkTaskOwner(id, userAuth.Uid(ctx)); msg != "" {
+			return json.CommonFailure(msg)
+		}
+	}
 	taskModel := new(models.Task)
 	_, err := taskModel.Update(id, models.CommonMap{
 		"status": status,
@@ -264,6 +298,19 @@ func changeStatus(ctx *macaron.Context, status models.Status) string {
 	}
 
 	return json.Success(utils.SuccessContent, nil)
+}
+
+// checkTaskOwner 检查任务是否属于指定用户，返回空字符串表示检查通过，否则返回错误信息
+func checkTaskOwner(taskId, uid int) string {
+	taskModel := new(models.Task)
+	task, err := taskModel.Detail(taskId)
+	if err != nil || task.Id == 0 {
+		return "任务不存在"
+	}
+	if task.UserId != uid {
+		return "无权限操作"
+	}
+	return ""
 }
 
 // 添加任务到定时器

@@ -7,6 +7,7 @@ import (
 // 主机
 type Host struct {
 	Id        int16  `json:"id" xorm:"smallint pk autoincr"`
+	UserId    int    `json:"user_id" xorm:"int notnull default 0 index"`     // 所属用户ID
 	Name      string `json:"name" xorm:"varchar(64) notnull"`                // 主机名称
 	Alias     string `json:"alias" xorm:"varchar(32) notnull default '' "`   // 主机别名
 	Port      int    `json:"port" xorm:"notnull default 5921"`               // 主机端口
@@ -28,7 +29,6 @@ func (host *Host) Create() (insertId int16, err error) {
 func (host *Host) UpdateBean(id int16) (int64, error) {
 	return Db.ID(id).Cols("name,alias,port,remark").Update(host)
 }
-
 // 更新
 func (host *Host) Update(id int, data CommonMap) (int64, error) {
 	return Db.Table(host).ID(id).Update(data)
@@ -86,6 +86,10 @@ func (host *Host) parseWhere(session *xorm.Session, params CommonMap) {
 	id, ok := params["Id"]
 	if ok && id.(int) > 0 {
 		session.And("id = ?", id)
+	}
+	userId, ok := params["UserId"]
+	if ok && userId.(int) > 0 {
+		session.And("user_id = ?", userId)
 	}
 	name, ok := params["Name"]
 	if ok && name.(string) != "" {

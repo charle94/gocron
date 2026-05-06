@@ -39,6 +39,7 @@ const (
 // 任务
 type Task struct {
 	Id               int                  `json:"id" xorm:"int pk autoincr"`
+	UserId           int                  `json:"user_id" xorm:"int notnull default 0 index"`                 // 所属用户ID
 	Name             string               `json:"name" xorm:"varchar(32) notnull"`                            // 任务名称
 	Level            TaskLevel            `json:"level" xorm:"tinyint notnull index default 1"`               // 任务等级 1: 主任务 2: 依赖任务
 	DependencyTaskId string               `json:"dependency_task_id" xorm:"varchar(64) notnull default ''"`   // 依赖任务ID,多个ID逗号分隔
@@ -83,7 +84,7 @@ func (task *Task) UpdateBean(id int) (int64, error) {
 	return Db.ID(id).
 		Cols(`name,spec,protocol,command,timeout,multi,
 			retry_times,retry_interval,remark,notify_status,
-			notify_type,notify_receiver_id, dependency_task_id, dependency_status, tag,http_method, notify_keyword`).
+			notify_type,notify_receiver_id,dependency_task_id,dependency_status,tag,http_method,notify_keyword`).
 		Update(task)
 }
 
@@ -251,6 +252,10 @@ func (task *Task) parseWhere(session *xorm.Session, params CommonMap) {
 	id, ok := params["Id"]
 	if ok && id.(int) > 0 {
 		session.And("t.id = ?", id)
+	}
+	userId, ok := params["UserId"]
+	if ok && userId.(int) > 0 {
+		session.And("t.user_id = ?", userId)
 	}
 	hostId, ok := params["HostId"]
 	if ok && hostId.(int) > 0 {

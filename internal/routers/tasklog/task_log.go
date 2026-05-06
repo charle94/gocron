@@ -7,6 +7,7 @@ import (
 	"github.com/ouqiang/gocron/internal/modules/logger"
 	"github.com/ouqiang/gocron/internal/modules/utils"
 	"github.com/ouqiang/gocron/internal/routers/base"
+	userAuth "github.com/ouqiang/gocron/internal/routers/user"
 	"github.com/ouqiang/gocron/internal/service"
 	"gopkg.in/macaron.v1"
 )
@@ -14,6 +15,9 @@ import (
 func Index(ctx *macaron.Context) string {
 	logModel := new(models.TaskLog)
 	queryParams := parseQueryParams(ctx)
+	if !userAuth.IsAdmin(ctx) {
+		queryParams["UserId"] = userAuth.Uid(ctx)
+	}
 	total, err := logModel.Total(queryParams)
 	if err != nil {
 		logger.Error(err)
@@ -30,11 +34,14 @@ func Index(ctx *macaron.Context) string {
 	})
 }
 
-// 清空日志
+// 清空日志（仅管理员）
 func Clear(ctx *macaron.Context) string {
+	json := utils.JsonResponse{}
+	if !userAuth.IsAdmin(ctx) {
+		return json.CommonFailure("无权限操作")
+	}
 	taskLogModel := new(models.TaskLog)
 	_, err := taskLogModel.Clear()
-	json := utils.JsonResponse{}
 	if err != nil {
 		return json.CommonFailure(utils.FailureContent)
 	}
@@ -51,6 +58,9 @@ func Stop(ctx *macaron.Context) string {
 	json := utils.JsonResponse{}
 	if err != nil {
 		return json.CommonFailure("获取任务信息失败#"+err.Error(), err)
+	}
+	if !userAuth.IsAdmin(ctx) && task.UserId != userAuth.Uid(ctx) {
+		return json.CommonFailure("无权限操作")
 	}
 	if task.Protocol != models.TaskRPC {
 		return json.CommonFailure("仅支持SHELL任务手动停止")
