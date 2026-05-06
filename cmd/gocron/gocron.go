@@ -102,6 +102,20 @@ func initModule() {
 	// 初始化DB
 	models.Db = models.CreateDb()
 
+	// 检查数据库表是否存在, 若不存在说明DB文件丢失或路径变更, 重置安装状态让用户重新安装
+	migration := new(models.Migration)
+	tablesExist, err := migration.TablesExist()
+	if err != nil {
+		logger.Warnf("检查数据库表失败: %s", err)
+		app.Installed = false
+		return
+	}
+	if !tablesExist {
+		logger.Warn("数据库表不存在，请通过安装页面重新初始化应用")
+		app.Installed = false
+		return
+	}
+
 	// 版本升级
 	upgradeIfNeed()
 
