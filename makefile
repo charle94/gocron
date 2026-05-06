@@ -26,6 +26,12 @@ gocron:
 node:
 	go build $(RACE) -o bin/gocron-node ./cmd/node
 
+# 静态编译：CGO_ENABLED=0，纯 Go 实现，适合容器化/精简部署
+.PHONY: build-static
+build-static:
+	CGO_ENABLED=0 go build -ldflags '-w -s' -o bin/gocron ./cmd/gocron
+	CGO_ENABLED=0 go build -ldflags '-w -s' -o bin/gocron-node ./cmd/node
+
 .PHONY: test
 test:
 	go test $(RACE) ./...

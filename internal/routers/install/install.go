@@ -4,8 +4,8 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
+	"strings"
 
-	_ "github.com/mattn/go-sqlite3"
 	macaron "gopkg.in/macaron.v1"
 
 	"github.com/go-macaron/binding"
@@ -20,18 +20,24 @@ import (
 
 // 系统安装
 
+// InstallForm 安装表单，sqlite3 时 host/port/user/password 可省略
 type InstallForm struct {
 	DbType               string `binding:"In(mysql,postgres,sqlite3)"`
-	DbHost               string `binding:"Required;MaxSize(50)"`
-	DbPort               int    `binding:"Required;Range(1,65535)"`
-	DbUsername           string `binding:"Required;MaxSize(50)"`
-	DbPassword           string `binding:"Required;MaxSize(30)"`
-	DbName               string `binding:"Required;MaxSize(50)"`
+	DbHost               string `binding:"MaxSize(50)"`
+	DbPort               int    `binding:"Range(0,65535)"`
+	DbUsername           string `binding:"MaxSize(50)"`
+	DbPassword           string `binding:"MaxSize(30)"`
+	DbName               string `binding:"Required;MaxSize(256)"`
 	DbTablePrefix        string `binding:"MaxSize(20)"`
 	AdminUsername        string `binding:"Required;MinSize(3)"`
 	AdminPassword        string `binding:"Required;MinSize(6)"`
 	ConfirmAdminPassword string `binding:"Required;MinSize(6)"`
 	AdminEmail           string `binding:"Required;Email;MaxSize(50)"`
+}
+
+// isSQLite 判断是否使用 sqlite3
+func isSQLite(dbType string) bool {
+	return strings.ToLower(dbType) == "sqlite3"
 }
 
 func (f InstallForm) Error(ctx *macaron.Context, errs binding.Errors) {
@@ -52,6 +58,20 @@ func Store(ctx *macaron.Context, form InstallForm) string {
 	if form.AdminPassword != form.ConfirmAdminPassword {
 		return json.CommonFailure("两次输入密码不匹配")
 	}
+
+	// 非 sqlite3 时必须填写主机名、端口、用户名
+	if !isSQLite(form.DbType) {
+		if form.DbHost == "" {
+			return json.CommonFailure("请输入数据库主机名")
+		}
+		if form.DbPort <= 0 {
+			return json.CommonFailure("请输入正确的数据库端口")
+		}
+		if form.DbUsername == "" {
+			return json.CommonFailure("请输入数据库用户名")
+		}
+	}
+
 	err := testDbConnection(form)
 	if err != nil {
 		return json.CommonFailure(err.Error())
@@ -100,12 +120,23 @@ func Store(ctx *macaron.Context, form InstallForm) string {
 
 // 配置写入文件
 func writeConfig(form InstallForm) error {
+	host := form.DbHost
+	port := form.DbPort
+	username := form.DbUsername
+	password := form.DbPassword
+	// sqlite3 不需要真实的主机/端口/用户名/密码
+	if isSQLite(form.DbType) {
+		host = "localhost"
+		if port <= 0 {
+			port = 1
+		}
+	}
 	dbConfig := []string{
 		"db.engine", form.DbType,
-		"db.host", form.DbHost,
-		"db.port", strconv.Itoa(form.DbPort),
-		"db.user", form.DbUsername,
-		"db.password", form.DbPassword,
+		"db.host", host,
+		"db.port", strconv.Itoa(port),
+		"db.user", username,
+		"db.password", password,
 		"db.database", form.DbName,
 		"db.prefix", form.DbTablePrefix,
 		"db.charset", "utf8",
@@ -140,6 +171,11 @@ func createAdminUser(form InstallForm) error {
 
 // 测试数据库连接
 func testDbConnection(form InstallForm) error {
+	// sqlite3 不需要远程连接测试，直接返回 nil
+	if isSQLite(form.DbType) {
+		return nil
+	}
+
 	var s setting.Setting
 	s.Db.Engine = form.DbType
 	s.Db.Host = form.DbHost

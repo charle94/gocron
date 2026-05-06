@@ -8,7 +8,17 @@
           <el-input v-model.trim="searchParams.id"></el-input>
         </el-form-item>
         <el-form-item label="任务名称">
-          <el-input v-model.trim="searchParams.name"></el-input>
+          <el-input v-model.trim="searchParams.name" style="width:160px"></el-input>
+        </el-form-item>
+        <el-form-item label="匹配方式">
+          <el-select v-model.trim="searchParams.name_match_type" style="width:120px">
+            <el-option
+              v-for="item in nameMatchTypeList"
+              :key="item.value"
+              :label="item.label"
+              :value="item.value">
+            </el-option>
+          </el-select>
         </el-form-item>
         <el-form-item label="标签">
           <el-input v-model.trim="searchParams.tag"></el-input>
@@ -201,11 +211,19 @@ export default {
         id: '',
         protocol: '',
         name: '',
+        name_match_type: 'contains',
         tag: '',
         host_id: '',
         status: ''
       },
       isAdmin: this.$store.getters.user.isAdmin,
+      nameMatchTypeList: [
+        {value: 'contains', label: '包含（默认）'},
+        {value: 'exact', label: '精确匹配'},
+        {value: 'prefix', label: '前缀匹配'},
+        {value: 'suffix', label: '后缀匹配'},
+        {value: 'regex', label: '正则匹配'}
+      ],
       protocolList: [
         {
           value: '1',

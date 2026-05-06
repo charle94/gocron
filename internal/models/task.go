@@ -258,7 +258,25 @@ func (task *Task) parseWhere(session *xorm.Session, params CommonMap) {
 	}
 	name, ok := params["Name"]
 	if ok && name.(string) != "" {
-		session.And("t.name LIKE ?", "%"+name.(string)+"%")
+		nameVal := name.(string)
+		matchType, _ := params["NameMatchType"]
+		switch matchType {
+		case "exact":
+			// 精确匹配
+			session.And("t.name = ?", nameVal)
+		case "prefix":
+			// 前缀匹配
+			session.And("t.name LIKE ?", nameVal+"%")
+		case "suffix":
+			// 后缀匹配
+			session.And("t.name LIKE ?", "%"+nameVal)
+		case "regex":
+			// 正则匹配（MySQL: REGEXP，PostgreSQL: ~，SQLite: REGEXP 需注册函数）
+			session.And("t.name REGEXP ?", nameVal)
+		default:
+			// 默认：模糊包含匹配（contains）
+			session.And("t.name LIKE ?", "%"+nameVal+"%")
+		}
 	}
 	protocol, ok := params["Protocol"]
 	if ok && protocol.(int) > 0 {

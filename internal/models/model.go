@@ -1,12 +1,14 @@
 package models
 
 import (
+	"database/sql"
 	"fmt"
 	"strings"
 	"time"
 
 	macaron "gopkg.in/macaron.v1"
 
+	_ "github.com/glebarez/go-sqlite"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/go-xorm/core"
 	"github.com/go-xorm/xorm"
@@ -15,6 +17,29 @@ import (
 	"github.com/ouqiang/gocron/internal/modules/logger"
 	"github.com/ouqiang/gocron/internal/modules/setting"
 )
+
+func init() {
+	// glebarez/go-sqlite 以 "sqlite" 注册；xorm 需要 "sqlite3"。
+	// 打开一个内存连接获取 driver 实例，再以 "sqlite3" 别名重新注册。
+	if !sqlDriverRegistered("sqlite3") {
+		db, err := sql.Open("sqlite", ":memory:")
+		if err == nil {
+			drv := db.Driver()
+			db.Close()
+			sql.Register("sqlite3", drv)
+		}
+	}
+}
+
+// sqlDriverRegistered 判断指定驱动名是否已注册
+func sqlDriverRegistered(name string) bool {
+	for _, d := range sql.Drivers() {
+		if d == name {
+			return true
+		}
+	}
+	return false
+}
 
 type Status int8
 type CommonMap map[string]interface{}

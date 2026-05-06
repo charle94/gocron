@@ -22,6 +22,7 @@ import NotificationWebhook from '../pages/system/notification/webhook'
 
 import Install from '../pages/install/index'
 import LoginLog from '../pages/system/loginLog'
+import AdminPolicy from '../pages/admin/policy'
 
 Vue.use(Router)
 
@@ -151,6 +152,15 @@ const router = new Router({
       path: '/system/login-log',
       name: 'login-log',
       component: LoginLog
+    },
+    {
+      path: '/admin',
+      redirect: '/admin/policy'
+    },
+    {
+      path: '/admin/policy',
+      name: 'admin-policy',
+      component: AdminPolicy
     }
   ]
 })

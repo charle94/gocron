@@ -284,6 +284,7 @@ func parseQueryParams(ctx *macaron.Context) models.CommonMap {
 	params["Id"] = ctx.QueryInt("id")
 	params["HostId"] = ctx.QueryInt("host_id")
 	params["Name"] = ctx.QueryTrim("name")
+	params["NameMatchType"] = ctx.QueryTrim("name_match_type") // exact|prefix|suffix|contains|regex
 	params["Protocol"] = ctx.QueryInt("protocol")
 	params["Tag"] = ctx.QueryTrim("tag")
 	status := ctx.QueryInt("status")

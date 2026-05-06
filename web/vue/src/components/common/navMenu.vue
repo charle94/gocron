@@ -20,6 +20,9 @@
         <el-col :span="2">
           <el-menu-item v-if="this.$store.getters.user.isAdmin" index="/system">系统管理</el-menu-item>
         </el-col>
+        <el-col :span="2">
+          <el-menu-item v-if="this.$store.getters.user.isAdmin" index="/admin">后台管理</el-menu-item>
+        </el-col>
         <el-col :span="16"></el-col>
         <el-col :span="2" style="float:right;">
           <el-submenu v-if="this.$store.getters.user.token" index="userStatus">
