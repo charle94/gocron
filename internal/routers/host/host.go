@@ -13,6 +13,7 @@ import (
 	"github.com/ouqiang/gocron/internal/modules/rpc/proto"
 	"github.com/ouqiang/gocron/internal/modules/utils"
 	"github.com/ouqiang/gocron/internal/routers/base"
+	userAuth "github.com/ouqiang/gocron/internal/routers/user"
 	"github.com/ouqiang/gocron/internal/service"
 	macaron "gopkg.in/macaron.v1"
 )
@@ -24,6 +25,9 @@ const testConnectionTimeout = 5
 func Index(ctx *macaron.Context) string {
 	hostModel := new(models.Host)
 	queryParams := parseQueryParams(ctx)
+	if !userAuth.IsAdmin(ctx) {
+		queryParams["UserId"] = userAuth.Uid(ctx)
+	}
 	total, err := hostModel.Total(queryParams)
 	if err != nil {
 		logger.Error(err)
@@ -44,8 +48,12 @@ func Index(ctx *macaron.Context) string {
 // All 获取所有主机
 func All(ctx *macaron.Context) string {
 	hostModel := new(models.Host)
+	params := models.CommonMap{}
+	if !userAuth.IsAdmin(ctx) {
+		params["UserId"] = userAuth.Uid(ctx)
+	}
 	hostModel.PageSize = -1
-	hosts, err := hostModel.List(models.CommonMap{})
+	hosts, err := hostModel.List(params)
 	if err != nil {
 		logger.Error(err)
 	}
@@ -64,6 +72,9 @@ func Detail(ctx *macaron.Context) string {
 	if err != nil || hostModel.Id == 0 {
 		logger.Errorf("获取主机详情失败#主机id-%d", id)
 		return jsonResp.Success(utils.SuccessContent, nil)
+	}
+	if !userAuth.IsAdmin(ctx) && hostModel.UserId != userAuth.Uid(ctx) {
+		return jsonResp.CommonFailure("无权限访问")
 	}
 
 	return jsonResp.Success(utils.SuccessContent, hostModel)
@@ -112,9 +123,14 @@ func Store(ctx *macaron.Context, form HostForm) string {
 	}
 
 	if id > 0 {
+		// 更新时检查归属
+		if !userAuth.IsAdmin(ctx) && oldHostModel.UserId != userAuth.Uid(ctx) {
+			return json.CommonFailure("无权限操作")
+		}
 		_, err = hostModel.UpdateBean(id)
 	} else {
 		isCreate = true
+		hostModel.UserId = userAuth.Uid(ctx)
 		id, err = hostModel.Create()
 	}
 	if err != nil {
@@ -160,6 +176,9 @@ func Remove(ctx *macaron.Context) string {
 	if err != nil {
 		return json.CommonFailure("主机不存在")
 	}
+	if !userAuth.IsAdmin(ctx) && hostModel.UserId != userAuth.Uid(ctx) {
+		return json.CommonFailure("无权限操作")
+	}
 
 	_, err = hostModel.Delete(id)
 	if err != nil {
@@ -180,6 +199,9 @@ func Ping(ctx *macaron.Context) string {
 	json := utils.JsonResponse{}
 	if err != nil || hostModel.Id <= 0 {
 		return json.CommonFailure("主机不存在", err)
+	}
+	if !userAuth.IsAdmin(ctx) && hostModel.UserId != userAuth.Uid(ctx) {
+		return json.CommonFailure("无权限操作")
 	}
 
 	taskReq := &rpc.TaskRequest{}

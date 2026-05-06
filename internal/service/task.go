@@ -279,6 +279,7 @@ func (h *RPCHandler) Run(taskModel models.Task, taskUniqueId int64) (result stri
 func createTaskLog(taskModel models.Task, status models.Status) (int64, error) {
 	taskLogModel := new(models.TaskLog)
 	taskLogModel.TaskId = taskModel.Id
+	taskLogModel.UserId = taskModel.UserId
 	taskLogModel.Name = taskModel.Name
 	taskLogModel.Spec = taskModel.Spec
 	taskLogModel.Protocol = taskModel.Protocol

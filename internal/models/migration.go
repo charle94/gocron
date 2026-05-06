@@ -60,13 +60,14 @@ func (migration *Migration) Upgrade(oldVersionId int) {
 		return
 	}
 
-	versionIds := []int{110, 122, 130, 140, 150}
+	versionIds := []int{110, 122, 130, 140, 150, 160}
 	upgradeFuncs := []func(*xorm.Session) error{
 		migration.upgradeFor110,
 		migration.upgradeFor122,
 		migration.upgradeFor130,
 		migration.upgradeFor140,
 		migration.upgradeFor150,
+		migration.upgradeFor160,
 	}
 
 	startIndex := -1
@@ -249,6 +250,33 @@ func (m *Migration) upgradeFor150(session *xorm.Session) error {
 	}
 
 	logger.Info("已升级到v1.5\n")
+
+	return nil
+}
+
+// 升级到v1.6版本：为task、host、task_log表添加user_id字段
+func (m *Migration) upgradeFor160(session *xorm.Session) error {
+	logger.Info("开始升级到v1.6")
+
+	taskTable := TablePrefix + "task"
+	hostTable := TablePrefix + "host"
+	taskLogTable := TablePrefix + "task_log"
+
+	stmts := []string{
+		fmt.Sprintf("ALTER TABLE %s ADD COLUMN user_id INT NOT NULL DEFAULT 0", taskTable),
+		fmt.Sprintf("CREATE INDEX IF NOT EXISTS idx_%s_user_id ON %s (user_id)", taskTable, taskTable),
+		fmt.Sprintf("ALTER TABLE %s ADD COLUMN user_id INT NOT NULL DEFAULT 0", hostTable),
+		fmt.Sprintf("CREATE INDEX IF NOT EXISTS idx_%s_user_id ON %s (user_id)", hostTable, hostTable),
+		fmt.Sprintf("ALTER TABLE %s ADD COLUMN user_id INT NOT NULL DEFAULT 0", taskLogTable),
+		fmt.Sprintf("CREATE INDEX IF NOT EXISTS idx_%s_user_id ON %s (user_id)", taskLogTable, taskLogTable),
+	}
+	for _, sql := range stmts {
+		if _, err := session.Exec(sql); err != nil {
+			return err
+		}
+	}
+
+	logger.Info("已升级到v1.6\n")
 
 	return nil
 }
